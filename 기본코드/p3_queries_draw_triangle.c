@@ -62,7 +62,7 @@ void mykeyboard(unsigned char key, int x, int y) {
 	}
 }
 
-//ㅅㅜㅇㅓㅂㅅㅣㄱㅏㄴㅇㅔㅊㅜㄱㅏㅎㅏㄴㅋㅗㄷㅡ
+//수업시간에 추가한 코드
 void mymouse(int button, int state, int x, int y)
 {
 	printf("button %d	state %d	x %d	y %d\n", button,state,x,y);
