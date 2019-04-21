@@ -7,8 +7,10 @@ static char* vsSource = "#version 120 \n\
 attribute vec4 aPosition; \n\
 attribute vec4 aColor; \n\
 varying vec4 vColor; \n\
+uniform float udist; \n\
 void main(void) { \n\
-  gl_Position = aPosition; \n\
+  gl_Position = aPosition.x + udist; \n\
+  gl_Position.yzw = aPosition.yzw; \n\
   vColor = aColor; \n\
 }";
 
@@ -57,6 +59,13 @@ void myinit(void) {
 	glGetProgramInfoLog(prog, sizeof(buf), NULL, buf);
 	printf("validate log = [%s]\n", buf);
 	glUseProgram(prog); // execute it !
+
+	glGenBuffer(1, vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, 2 + 3 + 4 * sizeof(GLfloat), NULL, , GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, 3 * 4 * sizeof(GLfloat), vertices);
+	glBufferSubData(GL_ARRAY_BUFFER, 3 * 4 * sizeof(GLfloat), 3 * 4 * sizeof(GLfloat), vertices);
+
 }
 
 void mykeyboard(unsigned char key, int x, int y) {
@@ -72,13 +81,18 @@ GLfloat vertices[] = {
 	+0.5, -0.5, 0.0, 1.0,
 	-0.5, +0.5, 0.0, 1.0,
 };
+GLfloat refvertices[] = {
+	-0.5, -0.5, 0.0, 1.0,
+	+0.5, -0.5, 0.0, 1.0,
+	-0.5, +0.5, 0.0, 1.0,
+};
 
 GLfloat colors[] = {
 	1.0, 0.0, 0.0, 1.0, // red
 	0.0, 1.0, 0.0, 1.0, // green
 	0.0, 0.0, 1.0, 1.0, // blue
 };
-
+float dist = 0;
 void mydisplay(void) {
 	GLuint loc;
 	// clear 
@@ -92,10 +106,33 @@ void mydisplay(void) {
 	loc = glGetAttribLocation(prog, "aColor");
 	glEnableVertexAttribArray(loc);
 	glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, 0, colors);
+
+	loc = glGetUniformLocation(prog, "udist");
+	glUniform1f(loc, dist);
 	// draw a triangle
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	// flush all
 	glFlush();
+}
+
+void myreshape(int x, int y) {
+	printf("reshape\n");
+	glViewport(0, 0, x, y);//ÀÌ°Ô ¹¹ÇÏ´Â°ÇÁö ³ìÀ½ ´Ù½Ãµè±â
+}
+int tt = 0;
+
+void myidle() {
+
+	
+	dist += 0.001;
+	if (dist > 0.5)
+		dist =-0.5;
+	printf("dist %f\n", dist );
+	/*for (int i = 0; i < 12; i += 4) {
+		vertices[i]= refvertices[i]+dist;
+		glutPostRedisplay();
+	}*/
+	glutPostRedisplay();
 }
 
 int main(int argc, char* argv[]) {
@@ -106,6 +143,8 @@ int main(int argc, char* argv[]) {
 	glutCreateWindow("simple");
 	glutDisplayFunc(mydisplay);
 	glutKeyboardFunc(mykeyboard);
+	glutReshapeFunc(myreshape);
+	glutIdleFunc(myidle);
 	glewInit();
 	myinit();
 	glutMainLoop();
