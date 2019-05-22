@@ -279,7 +279,7 @@ void setViewMat(void) {
 	n[1] = at[1] - eye[1];
 	n[2] = at[2] - eye[2];
 	l = sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
-	n[0] /= l; n[1] /= l; n[2] /= l;
+	n[0] /= l; n[1] /= l; n[2] /= l;//물체방향 단위벡터
 	// u = up * n
 	u[0] = up[1] * n[2] - up[2] * n[1];
 	u[1] = up[2] * n[0] - up[0] * n[2];
@@ -348,7 +348,7 @@ int main(int argc, char* argv[]) {
 	glewInit();
 	generateSphere(4);
 	myinit();
-glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	setViewMat();
 	setProjMat();
 	glutMainLoop();
