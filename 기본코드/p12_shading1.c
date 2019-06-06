@@ -7,85 +7,35 @@
 #define WINDSIZEX 500
 #define WINDSIZEY 500
 
-static char* vsSource = "#version 150 \n\
-in vec4 aPosition; \n\
-in vec4 aNormal; \n\
-out vec4 vColor; \n\
+static char* vsSource = "#version 120 \n\
+attribute vec4 aPosition; \n\
+attribute vec4 aNormal; \n\
+varying vec4 vColor; \n\
 uniform mat4 uModel; \n\
 uniform mat4 uView; \n\
 uniform mat4 uProj; \n\
-uniform vec4 light_position; \n\
-uniform vec4 light_ambient; \n\
-uniform vec4 light_diffuse; \n\
-uniform vec4 light_specular; \n\
-uniform vec4 light_att; // for (a + b*d + c*d^2) \n\
-uniform vec4 material_ambient; \n\
-uniform vec4 material_diffuse; \n\
-uniform vec4 material_specular; \n\
-uniform float material_shineness; \n\
+uniform float utt; \n\
 void main(void) { \n\
-	vec4 vPosition = uView * uModel * aPosition; // position in view frame \n\
-	mat4 mNormal = transpose(inverse(uView * uModel)); // normal transformation \n\
-	vec4 vNormal = mNormal * aNormal; // normal vector in view frame \n\
-	vec3 N = vNormal.xyz; \n\
-	vec3 L = normalize(light_position.xyz - vPosition.xyz); \n\
-	vec3 V = -normalize(vPosition.xyz); \n\
-	vec3 R = normalize(2 * dot(L, N) * N - L); \n\
-	vec4 ambient = light_ambient * material_ambient; \n\
-	float d = length(light_position.xyz - vPosition.xyz); \n\
-	float denom = light_att.x + light_att.y * d + light_att.z * d * d; \n\
-	vec4 diffuse = max(dot(L, N), 0.0) * light_diffuse * material_diffuse / denom; \n\
-	vec4 specular = pow(max(dot(R, V), 0.0), material_shineness) * light_specular * material_specular / denom; \n\
-  	vColor = ambient + diffuse + specular; \n\
-  	gl_Position = uProj * vPosition; \n\
+  vec4 t; \n\
+  vColor = vec4(1.0, 1.0, 1.0, 1.0); \n\
+	t = aPosition; \n\
+	t.xyz = aPosition.xyz + aNormal.xyz *utt;\n\
+  gl_Position = uProj * uView * uModel * t; \n\
 }";
 
 static char* fsSource = "#version 120 \n\
 varying vec4 vColor; \n\
 void main(void) { \n\
-	gl_FragColor = vColor; \n\
+  gl_FragColor = vColor; \n\
 }";
 
 GLuint vs = 0;
 GLuint fs = 0;
 GLuint prog = 0;
-
+GLfloat tt;
 int num = 0;
 GLfloat vertex[10240 * 3][4];
 GLfloat normal[10240 * 3][4];
-
-void setLightAndMaterial(void) {
-	GLfloat light_pos[4] = { -1.5, 1.5, 0.0, 1.0 };
-	GLfloat light_amb[4] = { 0.2, 0.2, 0.2, 1.0 };
-	GLfloat light_dif[4] = { 1.0, 1.0, 1.0, 1.0 };
-	GLfloat light_spe[4] = { 1.0, 1.0, 1.0, 1.0 };
-	GLfloat light_att[4] = { 1.0, 0.0, 0.0, 1.0 }; // a, b, c, dummy
-	GLfloat mat_amb[4] = { 1.0, 1.0, 1.0, 1.0 };
-	GLfloat mat_dif[4] = { 1.0, 1.0, 1.0, 1.0 };
-	GLfloat mat_spe[4] = { 1.0, 1.0, 1.0, 1.0 };
-	GLfloat mat_shi = 30.0; // shineness
-	GLuint loc;
-	// light
-	loc = glGetUniformLocation(prog, "light_position");
-	glUniform4fv(loc, 1, light_pos);
-	loc = glGetUniformLocation(prog, "light_ambient");
-	glUniform4fv(loc, 1, light_amb);
-	loc = glGetUniformLocation(prog, "light_diffuse");
-	glUniform4fv(loc, 1, light_dif);
-	loc = glGetUniformLocation(prog, "light_specular");
-	glUniform4fv(loc, 1, light_spe);
-	loc = glGetUniformLocation(prog, "light_att");
-	glUniform4fv(loc, 1, light_att);
-	// material
-	loc = glGetUniformLocation(prog, "material_ambient");
-	glUniform4fv(loc, 1, mat_amb);
-	loc = glGetUniformLocation(prog, "material_diffuse");
-	glUniform4fv(loc, 1, mat_dif);
-	loc = glGetUniformLocation(prog, "material_specular");
-	glUniform4fv(loc, 1, mat_spe);
-	loc = glGetUniformLocation(prog, "material_shineness");
-	glUniform1f(loc, mat_shi);
-}
 
 void triangles(int level, GLfloat a[3], GLfloat b[3], GLfloat c[3]) {
 	if (num >= sizeof(vertex) / sizeof(vertex[0])) {
@@ -275,6 +225,8 @@ void mykeyboard(unsigned char key, int x, int y) {
 
 void myidle(void) {
 	// nothing
+	tt++ ;
+	printf("tt = %f\n", tt);
 }
 
 void myreshape(int width, int height) {
@@ -291,7 +243,7 @@ void myreshape(int width, int height) {
 void mydisplay(void) {
 	GLuint loc;
 	// clear 
-	glClearColor(0.0, 0.0, 0.0, 1.0); // black
+	glClearColor(0.3, 0.3, 0.3, 1.0); // gray
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	// provide the matrices
 	loc = glGetUniformLocation(prog, "uModel");
@@ -300,7 +252,10 @@ void mydisplay(void) {
 	glUniformMatrix4fv(loc, 1, GL_FALSE, matView);
 	loc = glGetUniformLocation(prog, "uProj");
 	glUniformMatrix4fv(loc, 1, GL_FALSE, matProj);
+	loc = glGetUniformLocation(prog, "utt");
+	glUniform1f(loc, tt);
 	// draw a triangle
+	glDrawArrays(GL_POINTS, 0, num);
 	glDrawArrays(GL_TRIANGLES, 0, num);
 	// flush all
 	glFlush();
@@ -312,7 +267,7 @@ void setViewMat(void) {
 	GLfloat p[3], n[3], v[3], u[3];
 	GLfloat l;
 	// set defaults
-	eye[0] = 0; eye[1] = 0; eye[2] = -2;
+	eye[0] = 0; eye[1] = 1; eye[2] = -2;
 	at[0] = 0; at[1] = 0; at[2] = 0;
 	up[0] = 0; up[1] = 1; up[2] = 0;
 /*
@@ -332,7 +287,7 @@ void setViewMat(void) {
 	n[1] = at[1] - eye[1];
 	n[2] = at[2] - eye[2];
 	l = sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
-	n[0] /= l; n[1] /= l; n[2] /= l;
+	n[0] /= l; n[1] /= l; n[2] /= l;//물체방향 단위벡터
 	// u = up * n
 	u[0] = up[1] * n[2] - up[2] * n[1];
 	u[1] = up[2] * n[0] - up[0] * n[2];
@@ -395,13 +350,13 @@ int main(int argc, char* argv[]) {
 	glutInitWindowPosition(0, 0);
 	glutCreateWindow("simple");
 	glutDisplayFunc(mydisplay);
-	//glutKeyboardFunc(mykeyboard);
-	//glutReshapeFunc(myreshape);
-	//glutIdleFunc(myidle);
+	glutKeyboardFunc(mykeyboard);
+	glutReshapeFunc(myreshape);
+	glutIdleFunc(myidle);
 	glewInit();
-	generateSphere(5);
+	generateSphere(4);
 	myinit();
-	setLightAndMaterial();
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);//GL_FRONT_AND_BACK : 노말벡터가 향하는 방향이 front 뒤쪽이 back
 	setViewMat();
 	setProjMat();
 	glutMainLoop();
